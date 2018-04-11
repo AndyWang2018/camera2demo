@@ -191,6 +191,7 @@ public class Camera2BasicFragment extends Fragment
             // This method is called when the camera is opened.  We start camera preview here.
             mCameraOpenCloseLock.release();
             mCameraDevice = cameraDevice;
+            Log.d(TAG,"CamereDevice's StateCallback onOpened");
             createCameraPreviewSession();
         }
 
@@ -199,10 +200,12 @@ public class Camera2BasicFragment extends Fragment
             mCameraOpenCloseLock.release();
             cameraDevice.close();
             mCameraDevice = null;
+            Log.d(TAG,"CamereDevice's StateCallback onDisconnected");
         }
 
         @Override
         public void onError(@NonNull CameraDevice cameraDevice, int error) {
+            Log.d(TAG,"CamereDevice's StateCallback onError");
             mCameraOpenCloseLock.release();
             cameraDevice.close();
             mCameraDevice = null;
@@ -429,18 +432,21 @@ public class Camera2BasicFragment extends Fragment
         view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.info).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+        Log.d(TAG,"onViewCreated ");
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
+        Log.d(TAG,"onActivityCreated ");
     }
 
     @Override
     public void onResume() {
         super.onResume();
         startBackgroundThread();
+        Log.d(TAG,"onResume");
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
@@ -448,6 +454,7 @@ public class Camera2BasicFragment extends Fragment
         // the SurfaceTextureListener).
         if (mTextureView.isAvailable()) {
             openCamera(mTextureView.getWidth(), mTextureView.getHeight());
+            Log.d(TAG,"onResume openCamera mTextView.getWidth()" + mTextureView.getWidth() + " mTextView.getHeight() = " + mTextureView.getHeight());
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
@@ -458,6 +465,7 @@ public class Camera2BasicFragment extends Fragment
         closeCamera();
         stopBackgroundThread();
         super.onPause();
+        Log.d(TAG,"onPause");
     }
 
     private void requestCameraPermission() {
@@ -492,15 +500,21 @@ public class Camera2BasicFragment extends Fragment
         Activity activity = getActivity();
         CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
+
+            Log.d(TAG,"setUpCameraOutput begin 111");
+
             for (String cameraId : manager.getCameraIdList()) {
                 CameraCharacteristics characteristics
                         = manager.getCameraCharacteristics(cameraId);
 
                 // We don't use a front facing camera in this sample.
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+
+                Log.d(TAG,"setUpCameraOutput facing = " + facing +  " cameraId = " + cameraId);
+               /*
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
                     continue;
-                }
+                }*/
 
                 StreamConfigurationMap map = characteristics.get(
                         CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -522,6 +536,9 @@ public class Camera2BasicFragment extends Fragment
                 int displayRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
                 //noinspection ConstantConditions
                 mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+
+                Log.d(TAG,"setUpCameraOutputs displayRotation = " + displayRotation + " mSensorOrientation = " + mSensorOrientation);
+
                 boolean swappedDimensions = false;
                 switch (displayRotation) {
                     case Surface.ROTATION_0:
@@ -584,6 +601,9 @@ public class Camera2BasicFragment extends Fragment
                 mFlashSupported = available == null ? false : available;
 
                 mCameraId = cameraId;
+
+                Log.d(TAG,"setUpCameraOutput  mCameraId = " + mCameraId);
+
                 return;
             }
         } catch (CameraAccessException e) {
@@ -613,6 +633,7 @@ public class Camera2BasicFragment extends Fragment
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
+            Log.d(TAG,"openCamera mCameraId = " + mCameraId);
             manager.openCamera(mCameraId, mStateCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
